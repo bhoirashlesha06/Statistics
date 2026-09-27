@@ -1,0 +1,151 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
+    roc_auc_score,
+    roc_curve
+)
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+
+columns = [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age",
+    "Outcome"
+]
+
+df = pd.read_csv(url, names=columns)
+
+df.head()
+print("Dataset Shape:", df.shape)
+print("\nDataset Information:")
+df.info()
+print("Zero values in each column:")
+print((df == 0).sum())
+invalid_columns = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+df[invalid_columns] = df[invalid_columns].replace(0, np.nan)
+
+print(df.isnull().sum())
+for column in invalid_columns:
+    df[column] = df[column].fillna(df[column].median())
+
+print("Missing values after preprocessing:")
+print(df.isnull().sum())
+X = df.drop("Outcome", axis=1)
+y = df["Outcome"]
+
+print("Features:")
+print(X.columns)
+
+print("\nTarget:")
+print(y.name)
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+print("Training data:", X_train.shape)
+print("Testing data:", X_test.shape)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+model = LogisticRegression(random_state=42)
+model.fit(X_train_scaled, y_train)
+y_pred = model.predict(X_test_scaled)
+
+print("Predicted values:")
+print(y_pred)
+y_prob = model.predict_proba(X_test_scaled)[:, 1]
+
+print("Predicted probabilities:")
+print(y_prob[:10])
+cm = confusion_matrix(y_test, y_pred)
+
+print("Confusion Matrix:")
+print(cm)
+plt.figure(figsize=(6, 4))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=["Non-Diabetic", "Diabetic"],
+    yticklabels=["Non-Diabetic", "Diabetic"]
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+
+plt.show()
+accuracy = accuracy_score(y_test, y_pred)
+
+print("Accuracy:", accuracy)
+precision = precision_score(y_test, y_pred)
+
+print("Precision:", precision)
+recall = recall_score(y_test, y_pred)
+
+print("Recall:", recall)
+f1 = f1_score(y_test, y_pred)
+
+print("F1-Score:", f1)
+auc = roc_auc_score(y_test, y_prob)
+
+print("ROC-AUC:", auc)
+print("Classification Model Performance")
+print("--------------------------------")
+print("Accuracy  :", accuracy)
+print("Precision :", precision)
+print("Recall    :", recall)
+print("F1-Score  :", f1)
+print("ROC-AUC   :", auc)
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+fpr, tpr, thresholds = roc_curve(y_test, y_prob)
+
+plt.figure(figsize=(7, 5))
+
+plt.plot(fpr, tpr, label=f"Logistic Regression (AUC = {auc:.3f})")
+plt.plot([0, 1], [0, 1], linestyle="--")
+
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+
+plt.show()
+cm = confusion_matrix(y_test, y_pred)
+
+print("Confusion Matrix:")
+print(cm)
+
+print("True Positive (TP):", cm[1, 1])
+print("False Negative (FN):", cm[1, 0])
