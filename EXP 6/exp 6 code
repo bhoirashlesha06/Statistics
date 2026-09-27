@@ -1,0 +1,132 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+
+columns = [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age",
+    "Outcome"
+]
+
+df = pd.read_csv(url, names=columns)
+
+df.head()
+print("Shape of dataset:", df.shape)
+
+print("\nColumn names:")
+print(df.columns)
+
+print("\nDataset information:")
+df.info()
+X = df.drop("BMI", axis=1)
+y = df["BMI"]
+
+print("Features:")
+print(X.columns)
+
+print("\nTarget:")
+print(y.name)
+print(df.isnull().sum())
+invalid_columns = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+print("Zero values in important medical attributes:")
+print((df[invalid_columns] == 0).sum())
+df[invalid_columns] = df[invalid_columns].replace(0, np.nan)
+
+print(df.isnull().sum())
+for column in invalid_columns:
+    df[column] = df[column].fillna(df[column].median())
+
+print(df.isnull().sum())
+X = df.drop("BMI", axis=1)
+y = df["BMI"]
+
+print("X shape:", X.shape)
+print("y shape:", y.shape)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.20,
+    random_state=42
+)
+
+print("Training data:", X_train.shape)
+print("Testing data:", X_test.shape)
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print("Predicted BMI values:")
+print(y_pred[:10])
+comparison = pd.DataFrame({
+    "Actual BMI": y_test.values,
+    "Predicted BMI": y_pred
+})
+
+print(comparison.head(10))
+mae = mean_absolute_error(y_test, y_pred)
+
+print("Mean Absolute Error (MAE):", mae)
+mse = mean_squared_error(y_test, y_pred)
+
+print("Mean Squared Error (MSE):", mse)
+rmse = np.sqrt(mse)
+
+print("Root Mean Squared Error (RMSE):", rmse)
+r2 = r2_score(y_test, y_pred)
+
+print("R² Score:", r2)
+print("Regression Model Performance")
+print("--------------------------------")
+print("MAE  :", mae)
+print("MSE  :", mse)
+print("RMSE :", rmse)
+print("R²   :", r2)
+residuals = y_test - y_pred
+
+print("First 10 residuals:")
+print(residuals.head(10))
+plt.figure(figsize=(8, 5))
+
+plt.scatter(y_pred, residuals)
+
+plt.axhline(y=0, linestyle="--")
+
+plt.xlabel("Predicted BMI")
+plt.ylabel("Residuals")
+plt.title("Residual Plot")
+
+plt.show()
+plt.figure(figsize=(8, 5))
+
+plt.scatter(y_test, y_pred)
+
+plt.xlabel("Actual BMI")
+plt.ylabel("Predicted BMI")
+plt.title("Actual vs Predicted BMI")
+
+plt.show()
+coefficients = pd.DataFrame({
+    "Feature": X.columns,
+    "Coefficient": model.coef_
+})
+
+print(coefficients)
+print("Intercept:", model.intercept_)
